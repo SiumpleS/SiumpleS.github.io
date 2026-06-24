@@ -1,1 +1,672 @@
-# TextCreator
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Master · Tiefenstudio v2</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0a0f;
+            color: #e6e6ef;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            /* Tiefenwirkung: Hintergrund-Gradienten + Partikel-Illusion */
+            background-image: 
+                radial-gradient(circle at 15% 25%, rgba(0, 255, 200, 0.07) 0%, transparent 45%),
+                radial-gradient(circle at 85% 70%, rgba(180, 0, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 45% 90%, rgba(255, 120, 0, 0.05) 0%, transparent 40%);
+            background-blend-mode: overlay;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Abstrakte flüssige Formen – Hintergrundebene */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(0, 255, 255, 0.12) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 30%, rgba(255, 0, 200, 0.09) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(255, 200, 0, 0.06) 0%, transparent 45%);
+            filter: blur(60px);
+            pointer-events: none;
+        }
+
+        /* Subtile Partikel – ganz vorne (via Pseudoelement + Schatten) */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background-image: 
+                radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,0.18), transparent),
+                radial-gradient(2px 2px at 30% 70%, rgba(255,255,255,0.12), transparent),
+                radial-gradient(3px 3px at 50% 10%, rgba(0,255,255,0.25), transparent),
+                radial-gradient(2px 2px at 70% 85%, rgba(255,255,255,0.14), transparent),
+                radial-gradient(2px 2px at 90% 40%, rgba(200,200,255,0.12), transparent),
+                radial-gradient(3px 3px at 15% 90%, rgba(255,100,200,0.10), transparent),
+                radial-gradient(2px 2px at 85% 15%, rgba(100,200,255,0.18), transparent);
+            background-size: 200% 200%;
+            animation: particleFloat 30s ease-in-out infinite alternate;
+        }
+
+        @keyframes particleFloat {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+        }
+
+        /* Hauptcontainer – über allem (Z-Index) */
+        .container {
+            position: relative;
+            z-index: 10;
+            background: rgba(16, 16, 26, 0.72);
+            backdrop-filter: blur(12px) saturate(1.3);
+            -webkit-backdrop-filter: blur(12px) saturate(1.3);
+            padding: 32px 34px;
+            border-radius: 36px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.04);
+            width: 100%;
+            max-width: 1160px;
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: box-shadow 0.4s;
+        }
+
+        .container:hover {
+            box-shadow: 0 50px 100px rgba(0, 20, 30, 0.6), 0 0 0 1px rgba(0, 255, 255, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 700;
+            font-size: 28px;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #a0f0ff, #7a8cff, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 40px rgba(0, 180, 255, 0.20);
+            margin-top: 0;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        h1 i {
+            font-size: 28px;
+            color: #7ae0ff;
+            text-shadow: 0 0 25px rgba(0,200,255,0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.9fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            .container { padding: 22px; }
+        }
+
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+            color: #b0b8c9;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 130px;
+            background: rgba(4, 4, 12, 0.7);
+            border: 1.5px solid #2a2a3e;
+            border-radius: 18px;
+            color: #f0f4ff;
+            padding: 14px 18px;
+            font-size: 15px;
+            box-sizing: border-box;
+            resize: vertical;
+            backdrop-filter: blur(4px);
+            transition: border 0.2s, box-shadow 0.2s;
+            font-family: 'Segoe UI', monospace;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            border-color: #66d4ff !important;
+            box-shadow: 0 0 0 4px rgba(0, 200, 255, 0.12);
+            outline: none;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0 12px 0;
+            background: rgba(10, 10, 20, 0.5);
+            backdrop-filter: blur(4px);
+            padding: 12px 14px;
+            border-radius: 28px;
+            border: 1px solid #26263a;
+        }
+
+        .toolbar button {
+            background: rgba(36, 40, 58, 0.7);
+            backdrop-filter: blur(2px);
+            color: #eef2ff;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+
+        .toolbar button i {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .toolbar button:hover {
+            background: #3d4466;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+
+        .btn-style { border-bottom: 3px solid #aabbdd; }
+        .btn-color { border-bottom: 3px solid #ff6666; }
+        .btn-anim { border-bottom: 3px solid #ff66ff; background: rgba(40, 20, 50, 0.6); }
+        .btn-player { border-bottom: 3px solid #ffdd44; }
+        .btn-cd { border-bottom: 3px solid #ff4444; background: rgba(50, 18, 18, 0.6); }
+
+        .color-section {
+            display: none;
+            gap: 18px;
+            align-items: center;
+            background: rgba(12, 12, 22, 0.6);
+            backdrop-filter: blur(4px);
+            padding: 14px 20px;
+            border-radius: 40px;
+            margin-bottom: 16px;
+            border: 1px solid #2a2a44;
+            flex-wrap: wrap;
+        }
+
+        .panel {
+            background: rgba(10, 10, 20, 0.5);
+            backdrop-filter: blur(6px);
+            padding: 20px 20px;
+            border-radius: 26px;
+            border: 1px solid #28283e;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(4, 4, 12, 0.6);
+            border: 1px solid #2b2b42;
+            border-radius: 30px;
+            color: #f0f4ff;
+            box-sizing: border-box;
+            backdrop-filter: blur(2px);
+            transition: 0.15s;
+            font-size: 14px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #66d4ff;
+            cursor: pointer;
+        }
+
+        .flex {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 44px;
+            height: 38px;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+            border-radius: 30px;
+        }
+
+        .outputs {
+            grid-column: 1 / -1;
+            margin-top: 26px;
+        }
+
+        .box-wrapper {
+            margin-bottom: 18px;
+        }
+
+        .box-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            padding: 0 6px;
+        }
+
+        .box-head label {
+            font-weight: 500;
+            font-size: 13px;
+            color: #bcc3d6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .box-head label i {
+            color: #6ab0ff;
+            font-size: 14px;
+        }
+
+        .box-body {
+            background: rgba(2, 2, 10, 0.7);
+            backdrop-filter: blur(4px);
+            border: 1px solid #202036;
+            padding: 16px 22px;
+            border-radius: 22px;
+            transition: border 0.2s;
+        }
+
+        .box-body:hover {
+            border-color: #3a4a6a;
+        }
+
+        .code {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            color: #b0f0d0;
+            word-break: break-all;
+            white-space: pre-wrap;
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .copy-btn {
+            background: #2a6a8a;
+            color: #f0faff;
+            padding: 5px 18px;
+            border-radius: 40px;
+            font-size: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn i {
+            font-size: 13px;
+        }
+
+        .copy-btn:hover {
+            background: #3b8ab0;
+            transform: scale(1.02);
+        }
+
+        .desc {
+            font-size: 12px;
+            color: #5e6a7e;
+            margin-top: 4px;
+            margin-bottom: 10px;
+            padding-left: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #282842;
+            margin: 16px 0;
+        }
+
+        .flex input[type="number"] {
+            width: 70px;
+        }
+
+        .panel .row:last-child {
+            margin-bottom: 0;
+        }
+
+        #colorSection button {
+            background: #66d4ff;
+            color: #0b0b14;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        #colorSection button:hover {
+            background: #88e0ff;
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 600px) {
+            .row { grid-template-columns: 1fr; }
+            .container { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        <i class="fas fa-bolt"></i>
+        Notification · Tiefenstudio
+        <i class="fas fa-layer-group" style="font-size: 22px; opacity: 0.6;"></i>
+    </h1>
+
+    <div class="grid">
+        <!-- LINKER BEREICH: TEXT + TOOLBAR -->
+        <div>
+            <label for="textInput"><i class="fas fa-pen-fancy" style="margin-right: 6px;"></i> Nachricht mit Tags</label>
+            <textarea id="textInput">Achtung &bold:&shake:&color:FF0000:&displayname&&&&&! Das &underline:&wave:Mega-Event&& endet in &countdown&!</textarea>
+            <div class="desc">
+                <i class="fas fa-mouse-pointer" style="color: #7aaaff;"></i> Markiere Text → Klicke auf Effekt-Buttons.
+            </div>
+
+            <div class="toolbar">
+                <button class="btn-style" onclick="insertTag('bold')"><i class="fas fa-bold"></i> Fett</button>
+                <button class="btn-style" onclick="insertTag('italic')"><i class="fas fa-italic"></i> Kursiv</button>
+                <button class="btn-style" onclick="insertTag('underline')"><i class="fas fa-underline"></i> Unterstr.</button>
+                <button class="btn-style" onclick="insertTag('strikethrough')"><i class="fas fa-strikethrough"></i> Durchstr.</button>
+                
+                <button class="btn-color" onclick="openColor('static')"><i class="fas fa-palette"></i> Farbe</button>
+                <button class="btn-color" onclick="openColor('gradient')"><i class="fas fa-fill-drip"></i> Verlauf</button>
+                
+                <button class="btn-anim" onclick="insertTag('rainbow')"><i class="fas fa-rainbow"></i> Regenb.</button>
+                <button class="btn-anim" onclick="insertTag('wave')"><i class="fas fa-water"></i> Welle</button>
+                <button class="btn-anim" onclick="insertTag('shake')"><i class="fas fa-bolt"></i> Wackeln</button>
+                
+                <button class="btn-player" onclick="putVar('&displayname&')"><i class="fas fa-user-tag"></i> Disp.</button>
+                <button class="btn-player" onclick="putVar('&playername&')"><i class="fas fa-user"></i> User</button>
+                <button class="btn-cd" onclick="putVar('&countdown&')"><i class="fas fa-hourglass-half"></i> Countdown</button>
+            </div>
+
+            <!-- Farbe / Verlauf Panel -->
+            <div id="colorSection" class="color-section">
+                <div class="flex">
+                    <span id="cLabel1"><i class="fas fa-circle" style="color: #ff0044;"></i> Farbe:</span>
+                    <input type="color" id="cOpt1" value="#ff0044">
+                </div>
+                <div class="flex" id="cGroupEnd">
+                    <span><i class="fas fa-circle" style="color: #00ffff;"></i> Endfarbe:</span>
+                    <input type="color" id="cOpt2" value="#00ffff">
+                </div>
+                <button onclick="applyColor()"><i class="fas fa-check"></i> Einfügen</button>
+            </div>
+        </div>
+
+        <!-- RECHTER BEREICH: PARAMETER -->
+        <div class="panel">
+            <div class="row">
+                <div>
+                    <label><i class="fas fa-user-astronaut"></i> Sender</label>
+                    <input type="text" id="pSender" value="System" oninput="render()">
+                </div>
+                <div>
+                    <label><i class="fas fa-image"></i> Icon (Asset-ID)</label>
+                    <input type="text" id="pIcon" placeholder="z.B. 6062547055" oninput="render()">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="flex">
+                    <input type="checkbox" id="pAnon" onchange="render()">
+                    <label for="pAnon" style="margin:0; cursor:pointer;"><i class="fas fa-user-secret"></i> Anonym</label>
+                </div>
+                <div>
+                    <label><i class="fas fa-arrows-alt-v"></i> Position</label>
+                    <select id="pPos" onchange="render()">
+                        <option value="Bottom">Unten</option>
+                        <option value="Top">Oben</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row">
+                <div class="flex">
+                    <input type="checkbox" id="pIsCd" checked onchange="render()">
+                    <label for="pIsCd" style="margin:0; cursor:pointer; color:#ff7777;"><i class="fas fa-clock"></i> Countdown</label>
+                </div>
+                <div>
+                    <label id="timeLabel"><i class="far fa-hourglass"></i> Dauer (Sek.)</label>
+                    <input type="number" id="pDuration" value="20" min="1" oninput="render()">
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="row">
+                <div class="flex">
+                    <input type="color" id="pBgColor" value="#1A1A22" onchange="render()">
+                    <label style="margin:0;">Hintergrund</label>
+                </div>
+                <div>
+                    <label><i class="fas fa-ghost"></i> Transparenz</label>
+                    <input type="number" id="pBgTrans" value="0.1" min="0" max="1" step="0.1" oninput="render()">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="flex">
+                    <input type="checkbox" id="pStrokeOn" checked onchange="render()">
+                    <label for="pStrokeOn" style="margin:0; cursor:pointer;"><i class="fas fa-border-all"></i> Box-Rahmen</label>
+                </div>
+                <div class="flex">
+                    <input type="color" id="pStrokeColor" value="#00ffff" onchange="render()">
+                    <input type="number" id="pStrokeThick" value="1" min="1" style="width:55px;" oninput="render()">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="flex">
+                    <input type="checkbox" id="pTextStrokeOn" checked onchange="render()">
+                    <label for="pTextStrokeOn" style="margin:0; cursor:pointer;"><i class="fas fa-font"></i> Text-Outline</label>
+                </div>
+                <div class="flex">
+                    <input type="color" id="pTextStrokeColor" value="#000000" onchange="render()">
+                    <input type="number" id="pTextStrokeThick" value="2" min="1" style="width:55px;" oninput="render()">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CODE-AUSGABEN -->
+    <div class="outputs">
+        <div class="box-wrapper">
+            <div class="box-head">
+                <label><i class="fas fa-code"></i> 1. Server-Skript (Lua)</label>
+                <button class="copy-btn" onclick="copy('codeScript')"><i class="fas fa-copy"></i> Kopieren</button>
+            </div>
+            <div class="box-body"><pre id="codeScript" class="code"></pre></div>
+        </div>
+
+        <div class="box-wrapper">
+            <div class="box-head">
+                <label><i class="fas fa-terminal"></i> 2. Dev-Konsole (F9)</label>
+                <button class="copy-btn" onclick="copy('codeConsole')"><i class="fas fa-copy"></i> Kopieren</button>
+            </div>
+            <div class="box-body"><pre id="codeConsole" class="code"></pre></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const textInput = document.getElementById('textInput');
+    const colorSection = document.getElementById('colorSection');
+    const cGroupEnd = document.getElementById('cGroupEnd');
+    const cLabel1 = document.getElementById('cLabel1');
+    const cOpt1 = document.getElementById('cOpt1');
+    const cOpt2 = document.getElementById('cOpt2');
+    let colMode = '';
+
+    textInput.addEventListener('input', render);
+
+    function render() {
+        let raw = textInput.value;
+        let luaText = raw.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+        let sender = document.getElementById('pSender').value.replace(/"/g, '\\"');
+        let iconId = document.getElementById('pIcon').value;
+        let isAnon = document.getElementById('pAnon').checked;
+        let pos = document.getElementById('pPos').value;
+        let isCd = document.getElementById('pIsCd').checked;
+        let timeVal = parseInt(document.getElementById('pDuration').value) || 5;
+        
+        let bgHex = document.getElementById('pBgColor').value.replace('#', '').toUpperCase();
+        let bgTrans = parseFloat(document.getElementById('pBgTrans').value) || 0;
+        
+        let sOn = document.getElementById('pStrokeOn').checked;
+        let sHex = document.getElementById('pStrokeColor').value.replace('#', '').toUpperCase();
+        let sThick = parseInt(document.getElementById('pStrokeThick').value) || 1;
+        
+        let tsOn = document.getElementById('pTextStrokeOn').checked;
+        let tsHex = document.getElementById('pTextStrokeColor').value.replace('#', '').toUpperCase();
+        let tsThick = parseInt(document.getElementById('pTextStrokeThick').value) || 1;
+
+        document.getElementById('timeLabel').innerHTML = isCd ? '<i class="fas fa-hourglass-start"></i> Countdown (Sek.)' : '<i class="far fa-clock"></i> Dauer (Sek.)';
+
+        let imgLine = iconId ? `\n    image = "${iconId}",` : "";
+        let timeLine = isCd ? `\n    isCountdown = true,\n    targetTimestamp = os.time() + ${timeVal},` : `\n    duration = ${timeVal},`;
+
+        let script = `local NotificationSystem = require(game:GetService("ServerScriptService"):WaitForChild("NotificationSystem"))
+
+NotificationSystem.send({
+    text = "${luaText}",
+    sender = "${sender}",
+    anonymous = ${isAnon},${timeLine}${imgLine}
+    screenPosition = "${pos}",
+    backgroundColor = Color3.fromHex("${bgHex}"),
+    backgroundTransparency = ${bgTrans},
+    strokeEnabled = ${sOn},
+    strokeColor = Color3.fromHex("${sHex}"),
+    strokeThickness = ${sThick},
+    textStrokeEnabled = ${tsOn},
+    textStrokeColor = Color3.fromHex("${tsHex}"),
+    textStrokeThickness = ${tsThick}
+})`;
+
+        let cTime = isCd ? `, isCountdown = true, targetTimestamp = os.time() + ${timeVal}` : `, duration = ${timeVal}`;
+        let cImg = iconId ? `, image = "${iconId}"` : "";
+        let consoleCmd = `require(game:GetService("ServerScriptService"):WaitForChild("NotificationSystem")).send({text = "${luaText}", sender = "${sender}", anonymous = ${isAnon}${cTime}${cImg}, screenPosition = "${pos}", backgroundColor = Color3.fromHex("${bgHex}")})`;
+
+        document.getElementById('codeScript').textContent = script;
+        document.getElementById('codeConsole').textContent = consoleCmd;
+    }
+
+    function insertTag(type) {
+        const s = textInput.selectionStart;
+        const e = textInput.selectionEnd;
+        const txt = textInput.value;
+        const sel = txt.substring(s, e);
+        let rep = `&${type}:${sel || "Text"}&`;
+        textInput.value = txt.substring(0, s) + rep + txt.substring(e);
+        textInput.focus();
+        textInput.setSelectionRange(s + rep.length, s + rep.length);
+        render();
+        colorSection.style.display = 'none';
+    }
+
+    function putVar(val) {
+        const s = textInput.selectionStart;
+        const txt = textInput.value;
+        textInput.value = txt.substring(0, s) + val + txt.substring(s);
+        textInput.focus();
+        textInput.setSelectionRange(s + val.length, s + val.length);
+        render();
+    }
+
+    function openColor(mode) {
+        colMode = mode;
+        colorSection.style.display = 'flex';
+        if (mode === 'static') { cLabel1.innerHTML = '<i class="fas fa-circle" style="color:#ff0044;"></i> Farbe:'; cGroupEnd.style.display = 'none'; } 
+        else { cLabel1.innerHTML = '<i class="fas fa-circle" style="color:#ff0044;"></i> Start:'; cGroupEnd.style.display = 'flex'; }
+    }
+
+    function applyColor() {
+        const s = textInput.selectionStart;
+        const e = textInput.selectionEnd;
+        const txt = textInput.value;
+        const sel = txt.substring(s, e);
+        const hex1 = cOpt1.value.replace('#', '').toUpperCase();
+        const hex2 = cOpt2.value.replace('#', '').toUpperCase();
+        let rep = colMode === 'static' ? `&color:${hex1}:${sel || "Text"}&` : `&gradient:${hex1}:${hex2}:${sel || "Text"}&`;
+        textInput.value = txt.substring(0, s) + rep + txt.substring(e);
+        textInput.focus();
+        textInput.setSelectionRange(s + rep.length, s + rep.length);
+        render();
+        colorSection.style.display = 'none';
+    }
+
+    function copy(id) {
+        const text = document.getElementById(id).textContent;
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            const btn = event.target.closest('button');
+            const old = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Kopiert!';
+            btn.style.backgroundColor = '#3aaa7a';
+            setTimeout(() => { btn.innerHTML = old; btn.style.backgroundColor = ''; }, 1200);
+        } catch (err) { alert('Fehler beim Kopieren.'); }
+        document.body.removeChild(ta);
+    }
+
+    render();
+</script>
+</body>
+</html>
