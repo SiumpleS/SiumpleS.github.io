@@ -18,7 +18,6 @@
             justify-content: center;
             align-items: center;
             padding: 24px;
-            /* Tiefenwirkung: Hintergrund-Gradienten + Partikel-Illusion */
             background-image: 
                 radial-gradient(circle at 15% 25%, rgba(0, 255, 200, 0.07) 0%, transparent 45%),
                 radial-gradient(circle at 85% 70%, rgba(180, 0, 255, 0.08) 0%, transparent 50%),
@@ -28,7 +27,6 @@
             overflow-x: hidden;
         }
 
-        /* Abstrakte flüssige Formen – Hintergrundebene */
         body::before {
             content: '';
             position: fixed;
@@ -42,7 +40,6 @@
             pointer-events: none;
         }
 
-        /* Subtile Partikel – ganz vorne (via Pseudoelement + Schatten) */
         body::after {
             content: '';
             position: fixed;
@@ -66,7 +63,6 @@
             100% { background-position: 100% 100%; }
         }
 
-        /* Hauptcontainer – über allem (Z-Index) */
         .container {
             position: relative;
             z-index: 10;
@@ -520,7 +516,7 @@
         </div>
     </div>
 
-    <!-- CODE-AUSGABEN -->
+    <!-- CODE-AUSGABEN MIT JSON -->
     <div class="outputs">
         <div class="box-wrapper">
             <div class="box-head">
@@ -536,6 +532,14 @@
                 <button class="copy-btn" onclick="copy('codeConsole')"><i class="fas fa-copy"></i> Kopieren</button>
             </div>
             <div class="box-body"><pre id="codeConsole" class="code"></pre></div>
+        </div>
+
+        <div class="box-wrapper">
+            <div class="box-head">
+                <label><i class="fas fa-cloud"></i> 3. JSON / Webhook</label>
+                <button class="copy-btn" onclick="copy('codeJson')"><i class="fas fa-copy"></i> Kopieren</button>
+            </div>
+            <div class="box-body"><pre id="codeJson" class="code"></pre></div>
         </div>
     </div>
 </div>
@@ -554,6 +558,7 @@
     function render() {
         let raw = textInput.value;
         let luaText = raw.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        let jsonText = raw.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
 
         let sender = document.getElementById('pSender').value.replace(/"/g, '\\"');
         let iconId = document.getElementById('pIcon').value;
@@ -578,6 +583,7 @@
         let imgLine = iconId ? `\n    image = "${iconId}",` : "";
         let timeLine = isCd ? `\n    isCountdown = true,\n    targetTimestamp = os.time() + ${timeVal},` : `\n    duration = ${timeVal},`;
 
+        // LUA SCRIPT
         let script = `local NotificationSystem = require(game:GetService("ServerScriptService"):WaitForChild("NotificationSystem"))
 
 NotificationSystem.send({
@@ -595,12 +601,34 @@ NotificationSystem.send({
     textStrokeThickness = ${tsThick}
 })`;
 
+        // CONSOLE
         let cTime = isCd ? `, isCountdown = true, targetTimestamp = os.time() + ${timeVal}` : `, duration = ${timeVal}`;
         let cImg = iconId ? `, image = "${iconId}"` : "";
         let consoleCmd = `require(game:GetService("ServerScriptService"):WaitForChild("NotificationSystem")).send({text = "${luaText}", sender = "${sender}", anonymous = ${isAnon}${cTime}${cImg}, screenPosition = "${pos}", backgroundColor = Color3.fromHex("${bgHex}")})`;
 
+        // JSON
+        let jsonObj = {
+            text: raw,
+            sender: document.getElementById('pSender').value,
+            anonymous: isAnon,
+            screenPosition: pos,
+            isCountdown: isCd,
+            backgroundColorHex: bgHex,
+            backgroundTransparency: bgTrans,
+            strokeEnabled: sOn,
+            strokeColorHex: sHex,
+            strokeThickness: sThick,
+            textStrokeEnabled: tsOn,
+            textStrokeColorHex: tsHex,
+            textStrokeThickness: tsThick
+        };
+        if (isCd) jsonObj.targetTimestamp = "os.time() + " + timeVal;
+        else jsonObj.duration = timeVal;
+        if (iconId) jsonObj.image = iconId;
+
         document.getElementById('codeScript').textContent = script;
         document.getElementById('codeConsole').textContent = consoleCmd;
+        document.getElementById('codeJson').textContent = JSON.stringify(jsonObj, null, 2);
     }
 
     function insertTag(type) {
