@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Notification Studio – Tag Editor</title>
+    <title>Notification Studio · Tag Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <link rel="stylesheet" href="style.css" />
 </head>
@@ -11,7 +11,7 @@
     <div class="container">
         <header>
             <h1><i class="fas fa-bolt"></i> Notification Studio</h1>
-            <p class="subhead">Tags in der Vorschau per Rechtsklick bearbeiten</p>
+            <p class="subhead">Text eingeben – Vorschau live – Rechtsklick auf Tags zum Bearbeiten</p>
         </header>
 
         <div class="main-grid">
@@ -31,6 +31,7 @@
                     <button id="btnGradient"><i class="fas fa-fill-drip"></i> Verlauf</button>
                     <button id="btnIcon"><i class="fas fa-image"></i> Icon</button>
                     <button data-var="&displayname&"><i class="fas fa-user-tag"></i> Disp.</button>
+                    <button data-var="&playername&"><i class="fas fa-user"></i> User</button>
                     <button data-var="&countdown&"><i class="fas fa-hourglass-half"></i> Countdown</button>
                 </div>
             </div>
@@ -71,7 +72,7 @@
 
         <!-- Vorschau-Bereich -->
         <div class="preview-section">
-            <label><i class="fas fa-eye"></i> Vorschau (Rechtsklick auf Tags zum Bearbeiten/Löschen)</label>
+            <label><i class="fas fa-eye"></i> Vorschau – markiere Text und klicke rechts für Tag-Optionen</label>
             <div id="previewContainer" class="preview-container">
                 <div id="previewNotification" class="preview-notification">
                     <span class="placeholder">Gib Text ein – die Vorschau erscheint hier</span>
@@ -99,10 +100,10 @@
     <!-- Benutzerdefiniertes Kontextmenü -->
     <div id="contextMenu" class="context-menu" style="display:none;">
         <ul>
-            <li id="ctxEdit"><i class="fas fa-edit"></i> Bearbeiten</li>
-            <li id="ctxDelete"><i class="fas fa-trash-alt"></i> Löschen</li>
-            <li id="ctxAddBefore"><i class="fas fa-plus"></i> Vorher einfügen</li>
-            <li id="ctxAddAfter"><i class="fas fa-plus"></i> Nachher einfügen</li>
+            <li id="ctxAdd"><i class="fas fa-plus"></i> Tag hinzufügen</li>
+            <li id="ctxEdit"><i class="fas fa-edit"></i> Tag bearbeiten</li>
+            <li id="ctxDelete"><i class="fas fa-trash-alt"></i> Tag löschen</li>
+            <li id="ctxWrap"><i class="fas fa-expand"></i> Tag umschließen</li>
         </ul>
     </div>
 
