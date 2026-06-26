@@ -1,12 +1,12 @@
-// ------------------------------------------------------------
-// Notification Studio – vollständige Logik
-// ------------------------------------------------------------
+// =================================================================
+// Notification Studio – komplette Logik mit Kontextmenü
+// =================================================================
 
 // --- DOM-Referenzen ---
 const rawText = document.getElementById('rawText');
 const previewContainer = document.getElementById('previewContainer');
 const previewNotification = document.getElementById('previewNotification');
-const tagList = document.getElementById('tagList'); // optional
+const contextMenu = document.getElementById('contextMenu');
 
 // Einstellungen
 const senderInput = document.getElementById('senderInput');
@@ -31,17 +31,14 @@ const luaOutput = document.getElementById('luaOutput');
 const consoleOutput = document.getElementById('consoleOutput');
 const jsonOutput = document.getElementById('jsonOutput');
 
-// Kontextmenü
-const contextMenu = document.getElementById('contextMenu');
+// --- State für Kontextmenü ---
+let activeSelection = null;      // { startIndex, endIndex, text, tagType, tagContent }
 let activeTagElement = null;
-let activeTagText = '';
-let activeTagType = '';
 
 // ------------------------------------------------------------
 // PARSER – wandelt rohen Text in HTML um (rekursiv)
 // ------------------------------------------------------------
 function parseTags(text) {
-    // Platzhalter ersetzen (Displayname, Username, Countdown)
     const placeholders = {
         '&displayname&': '<span style="color:#ffaa00; font-weight:bold;">[Displayname]</span>',
         '&playername&': '<span style="color:#ffaa00; font-weight:bold;">[Username]</span>',
@@ -50,8 +47,6 @@ function parseTags(text) {
     for (let [key, val] of Object.entries(placeholders)) {
         text = text.replaceAll(key, val);
     }
-
-    // Rekursive Tag-Ersetzung – von innen nach außen
     let previous;
     do {
         previous = text;
@@ -98,7 +93,7 @@ function applyTag(tag, content) {
 }
 
 // ------------------------------------------------------------
-// VORSCHAU RENDERN
+// VORSCHAU RENDERN (mit Data-Attributen für Tags)
 // ------------------------------------------------------------
 function renderPreview() {
     const text = rawText.value;
@@ -166,7 +161,6 @@ function renderPreview() {
         styles += `border: none;`;
     }
 
-    // Text-Outline über CSS
     let styleTag = document.getElementById('previewMessageStyle');
     if (!styleTag) {
         styleTag = document.createElement('style');
@@ -194,12 +188,11 @@ function renderPreview() {
     previewNotification.innerHTML = contentHtml;
     previewNotification.style.cssText = styles;
 
-    // Tags in der Vorschau mit Data-Attributen versehen, damit Kontextmenü funktioniert
-    // Wir markieren jedes Element, das eine der Tag-Klassen hat, mit data-tag-info
-    const tagElements = previewNotification.querySelectorAll('.rainbow-text, .shake, .jump, .wave, .gradient-text, [style*="color"], strong, em, u, del');
+    // Data-Attribute für alle getaggten Elemente setzen
+    const tagSelectors = '.rainbow-text, .shake, .jump, .wave, .gradient-text, [style*="color"], strong, em, u, del';
+    const tagElements = previewNotification.querySelectorAll(tagSelectors);
     tagElements.forEach(el => {
-        // Extrahiere den Tag-Typ und den Inhalt aus dem rohen Text
-        // Dazu suchen wir den ersten passenden Tag im aktuellen rawText
+        // Wir versuchen, den entsprechenden Tag im rohen Text zu finden
         const raw = rawText.value;
         const tagMatch = raw.match(/&(\w+):([^&]*)&/);
         if (tagMatch) {
@@ -218,7 +211,147 @@ function hexToRgba(hex, alpha) {
 }
 
 // ------------------------------------------------------------
-// TOOLBAR – Tags einfügen (ohne Markierung)
+// KONTEXTMENÜ – Rechtsklick in der Vorschau
+// ------------------------------------------------------------
+function setupContextMenu() {
+    previewContainer.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+
+        // Prüfen, ob eine Textselektion existiert
+        const sel = window.getSelection();
+        const selectedText = sel.toString().trim();
+
+        // Prüfen, ob die Selektion innerhalb eines getaggten Elements liegt
+        let tagElement = null;
+        if (sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            let node = range.startContainer;
+            while (node && node !== previewNotification) {
+                if (node.nodeType === 1 && node.matches && node.matches('.rainbow-text, .shake, .jump, .wave, .gradient-text, [style*="color"], strong, em, u, del')) {
+                    tagElement = node;
+                    break;
+                }
+                node = node.parentNode;
+            }
+        }
+
+        if (tagElement) {
+            // Rechtsklick auf einem bestehenden Tag
+            const tagType = tagElement.dataset.tagType || 'unknown';
+            const tagContent = tagElement.dataset.tagContent || tagElement.textContent;
+            activeTagElement = tagElement;
+            activeSelection = { text: selectedText, tagType, tagContent, element: tagElement };
+            // Menü anzeigen mit allen Optionen
+            showContextMenu(e.clientX, e.clientY, 'tag');
+        } else if (selectedText.length > 0) {
+            // Rechtsklick auf markierten Text (ohne Tag)
+            activeSelection = { text: selectedText, tagType: null, tagContent: null, element: null };
+            showContextMenu(e.clientX, e.clientY, 'selection');
+        } else {
+            // Keine Selektion – nichts tun
+            contextMenu.style.display = 'none';
+            return;
+        }
+    });
+
+    // Menü-Einträge
+    document.getElementById('ctxAdd').addEventListener('click', function() {
+        if (!activeSelection) return;
+        if (activeSelection.element) {
+            // Tag bearbeiten – wir fragen nach neuem Tag-Typ und Inhalt
+            const newType = prompt('Neuer Tag-Typ (z.B. wave, shake, rainbow, bold, color, gradient, icon):', activeSelection.tagType || 'wave');
+            if (newType) {
+                const newContent = prompt('Neuer Inhalt für den Tag:', activeSelection.tagContent || activeSelection.text);
+                if (newContent !== null) {
+                    const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+                    const newTag = `&${newType}:${newContent}&`;
+                    rawText.value = rawText.value.replace(oldTag, newTag);
+                    updateAll();
+                }
+            }
+        } else {
+            // Neuen Tag um die Selektion herum einfügen
+            const tagType = prompt('Tag-Typ (z.B. wave, shake, rainbow, bold, color, gradient, icon):', 'wave');
+            if (tagType) {
+                const tag = `&${tagType}:${activeSelection.text}&`;
+                // Ersetze den selektierten Text im rohen Text
+                const pos = rawText.value.indexOf(activeSelection.text);
+                if (pos !== -1) {
+                    rawText.value = rawText.value.substring(0, pos) + tag + rawText.value.substring(pos + activeSelection.text.length);
+                    updateAll();
+                }
+            }
+        }
+        contextMenu.style.display = 'none';
+    });
+
+    document.getElementById('ctxEdit').addEventListener('click', function() {
+        if (!activeSelection || !activeSelection.element) return;
+        const newContent = prompt('Neuen Inhalt für den Tag eingeben:', activeSelection.tagContent || activeSelection.text);
+        if (newContent !== null) {
+            const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+            const newTag = `&${activeSelection.tagType}:${newContent}&`;
+            rawText.value = rawText.value.replace(oldTag, newTag);
+            updateAll();
+        }
+        contextMenu.style.display = 'none';
+    });
+
+    document.getElementById('ctxDelete').addEventListener('click', function() {
+        if (!activeSelection || !activeSelection.element) return;
+        const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+        rawText.value = rawText.value.replace(oldTag, '');
+        updateAll();
+        contextMenu.style.display = 'none';
+    });
+
+    document.getElementById('ctxWrap').addEventListener('click', function() {
+        if (!activeSelection || !activeSelection.element) return;
+        // Umschließen: neuen Tag um den bestehenden herum
+        const newType = prompt('Tag-Typ für die Umschließung (z.B. wave, shake, rainbow):', 'wave');
+        if (newType) {
+            const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+            const newTag = `&${newType}:${oldTag}&`;
+            rawText.value = rawText.value.replace(oldTag, newTag);
+            updateAll();
+        }
+        contextMenu.style.display = 'none';
+    });
+
+    // Klick außerhalb schließt Menü
+    document.addEventListener('click', function(e) {
+        if (!contextMenu.contains(e.target)) {
+            contextMenu.style.display = 'none';
+        }
+    });
+}
+
+function showContextMenu(x, y, mode) {
+    // Alle Menüpunkte anzeigen, aber je nach Modus deaktivieren/aktivieren
+    const add = document.getElementById('ctxAdd');
+    const edit = document.getElementById('ctxEdit');
+    const del = document.getElementById('ctxDelete');
+    const wrap = document.getElementById('ctxWrap');
+
+    if (mode === 'tag') {
+        add.textContent = 'Tag ändern';
+        edit.style.display = 'flex';
+        del.style.display = 'flex';
+        wrap.style.display = 'flex';
+    } else {
+        add.textContent = 'Tag hinzufügen';
+        edit.style.display = 'none';
+        del.style.display = 'none';
+        wrap.style.display = 'none';
+    }
+
+    contextMenu.style.display = 'block';
+    contextMenu.style.left = x + 'px';
+    contextMenu.style.top = y + 'px';
+}
+
+// ------------------------------------------------------------
+// TOOLBAR – Platzhalter einfügen
 // ------------------------------------------------------------
 function setupToolbar() {
     document.querySelectorAll('.toolbar button[data-tag]').forEach(btn => {
@@ -227,7 +360,7 @@ function setupToolbar() {
             const placeholder = prompt(`Gib den Text für den ${tag}-Tag ein:`, 'Text');
             if (placeholder !== null) {
                 const tagString = `&${tag}:${placeholder}&`;
-                rawText.value += ' ' + tagString;
+                insertAtCursor(rawText, tagString);
                 updateAll();
             }
         });
@@ -235,7 +368,7 @@ function setupToolbar() {
 
     document.querySelectorAll('.toolbar button[data-var]').forEach(btn => {
         btn.addEventListener('click', function() {
-            rawText.value += ' ' + this.dataset.var;
+            insertAtCursor(rawText, this.dataset.var);
             updateAll();
         });
     });
@@ -245,7 +378,7 @@ function setupToolbar() {
         if (!hex) return;
         const text = prompt('Text für diese Farbe:', 'Text');
         if (text !== null) {
-            rawText.value += ` &color:${hex.replace('#','')}:${text}&`;
+            insertAtCursor(rawText, ` &color:${hex.replace('#','')}:${text}&`);
             updateAll();
         }
     });
@@ -257,7 +390,7 @@ function setupToolbar() {
         if (!c2) return;
         const text = prompt('Text für den Verlauf:', 'Text');
         if (text !== null) {
-            rawText.value += ` &gradient:${c1.replace('#','')}:${c2.replace('#','')}:${text}&`;
+            insertAtCursor(rawText, ` &gradient:${c1.replace('#','')}:${c2.replace('#','')}:${text}&`);
             updateAll();
         }
     });
@@ -265,96 +398,19 @@ function setupToolbar() {
     document.getElementById('btnIcon').addEventListener('click', function() {
         const id = prompt('Roblox Asset-ID:', '10845341253');
         if (id) {
-            rawText.value += ` &icon:${id}&`;
+            insertAtCursor(rawText, ` &icon:${id}&`);
             updateAll();
         }
     });
 }
 
-// ------------------------------------------------------------
-// KONTEXTMENÜ (Rechtsklick)
-// ------------------------------------------------------------
-function setupContextMenu() {
-    // Auf der gesamten Vorschau: rechtsklick abfangen
-    previewContainer.addEventListener('contextmenu', function(e) {
-        // Prüfen, ob auf ein getaggtes Element geklickt wurde
-        const target = e.target.closest('.rainbow-text, .shake, .jump, .wave, .gradient-text, [style*="color"], strong, em, u, del');
-        if (target) {
-            e.preventDefault();
-            // Tag-Informationen aus den Daten holen
-            const tagType = target.dataset.tagType || 'unknown';
-            const tagContent = target.dataset.tagContent || target.textContent;
-            activeTagElement = target;
-            activeTagText = tagContent;
-            activeTagType = tagType;
-
-            // Kontextmenü anzeigen
-            contextMenu.style.display = 'block';
-            contextMenu.style.left = e.clientX + 'px';
-            contextMenu.style.top = e.clientY + 'px';
-        } else {
-            // Kein Tag – Kontextmenü ausblenden
-            contextMenu.style.display = 'none';
-        }
-    });
-
-    // Kontextmenü-Einträge
-    document.getElementById('ctxEdit').addEventListener('click', function() {
-        if (!activeTagElement) return;
-        const newText = prompt('Neuer Text für diesen Tag:', activeTagText);
-        if (newText !== null) {
-            // Im rohen Text den entsprechenden Tag ersetzen
-            const oldTag = `&${activeTagType}:${activeTagText}&`;
-            const newTag = `&${activeTagType}:${newText}&`;
-            rawText.value = rawText.value.replace(oldTag, newTag);
-            updateAll();
-        }
-        contextMenu.style.display = 'none';
-    });
-
-    document.getElementById('ctxDelete').addEventListener('click', function() {
-        if (!activeTagElement) return;
-        const oldTag = `&${activeTagType}:${activeTagText}&`;
-        rawText.value = rawText.value.replace(oldTag, '');
-        updateAll();
-        contextMenu.style.display = 'none';
-    });
-
-    document.getElementById('ctxAddBefore').addEventListener('click', function() {
-        if (!activeTagElement) return;
-        const newTag = prompt('Neuen Tag vorher einfügen (z.B. &shake:Text&):', '&shake:Neuer Text&');
-        if (newTag) {
-            // Einfügen vor dem aktuellen Tag im rohen Text
-            const oldTag = `&${activeTagType}:${activeTagText}&`;
-            const pos = rawText.value.indexOf(oldTag);
-            if (pos !== -1) {
-                rawText.value = rawText.value.substring(0, pos) + newTag + ' ' + rawText.value.substring(pos);
-                updateAll();
-            }
-        }
-        contextMenu.style.display = 'none';
-    });
-
-    document.getElementById('ctxAddAfter').addEventListener('click', function() {
-        if (!activeTagElement) return;
-        const newTag = prompt('Neuen Tag nachher einfügen:', '&jump:Neuer Text&');
-        if (newTag) {
-            const oldTag = `&${activeTagType}:${activeTagText}&`;
-            const pos = rawText.value.indexOf(oldTag) + oldTag.length;
-            if (pos !== -1) {
-                rawText.value = rawText.value.substring(0, pos) + ' ' + newTag + rawText.value.substring(pos);
-                updateAll();
-            }
-        }
-        contextMenu.style.display = 'none';
-    });
-
-    // Klick außerhalb schließt Kontextmenü
-    document.addEventListener('click', function(e) {
-        if (!contextMenu.contains(e.target)) {
-            contextMenu.style.display = 'none';
-        }
-    });
+function insertAtCursor(textarea, text) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const val = textarea.value;
+    textarea.value = val.substring(0, start) + text + val.substring(end);
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + text.length;
 }
 
 // ------------------------------------------------------------
@@ -413,7 +469,6 @@ function generateCode() {
         if (textStrokeTh !== 2) luaLines.push(`    textStrokeThickness = ${textStrokeTh},`);
     } else luaLines.push(`    textStrokeEnabled = false,`);
     if (imageId) luaLines.push(`    imageId = "${imageId}",`);
-    // Letztes Komma entfernen
     let last = luaLines[luaLines.length-1];
     if (last.endsWith(',')) luaLines[luaLines.length-1] = last.slice(0, -1);
     luaLines.push('}');
@@ -552,7 +607,6 @@ function init() {
     setupCopy();
     setupTarget();
     setupSettings();
-    // Initiales Rendering
     updateAll();
 }
 
