@@ -1,16 +1,7 @@
-/* ------------------------------------------------------------
-   Design-Philosophie:
-   - Tiefe & Klarheit durch Glassmorphism und subtile Schatten
-   - Flüssige Übergänge (cubic-bezier) für ein organisches Gefühl
-   - Autoritäre, aber einladende Typografie (Segoe UI, große Überschriften)
-   - Farbakzente: Cyan (#00ffcc) für Interaktion, Violett für Kreativität
-   - Die Vorschau ist zentral, das Herzstück der Seite
-   ------------------------------------------------------------ */
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
     background: #0a0a0f;
     color: #e6e6ef;
     min-height: 100vh;
@@ -18,21 +9,17 @@ body {
     justify-content: center;
     align-items: center;
     padding: 24px;
-    background-image:
-        radial-gradient(circle at 20% 30%, rgba(0,255,200,0.06) 0%, transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(180,0,255,0.07) 0%, transparent 40%);
+    background-image: radial-gradient(circle at 20% 30%, rgba(0,255,200,0.06) 0%, transparent 40%),
+                      radial-gradient(circle at 80% 70%, rgba(180,0,255,0.07) 0%, transparent 40%);
     position: relative;
 }
-
-/* Partikel-Overlay */
 body::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: 0;
-    background:
-        radial-gradient(ellipse at 20% 50%, rgba(0,255,255,0.10) 0%, transparent 55%),
-        radial-gradient(ellipse at 80% 30%, rgba(255,0,200,0.08) 0%, transparent 50%);
+    background: radial-gradient(ellipse at 20% 50%, rgba(0,255,255,0.10) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 30%, rgba(255,0,200,0.08) 0%, transparent 50%);
     filter: blur(60px);
     pointer-events: none;
 }
@@ -42,10 +29,9 @@ body::after {
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background-image:
-        radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,0.12), transparent),
-        radial-gradient(2px 2px at 30% 70%, rgba(255,255,255,0.08), transparent),
-        radial-gradient(3px 3px at 50% 10%, rgba(0,255,255,0.18), transparent);
+    background-image: radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,0.12), transparent),
+                      radial-gradient(2px 2px at 30% 70%, rgba(255,255,255,0.08), transparent),
+                      radial-gradient(3px 3px at 50% 10%, rgba(0,255,255,0.18), transparent);
     background-size: 200% 200%;
     animation: particleFloat 30s ease-in-out infinite alternate;
 }
@@ -71,10 +57,7 @@ body::after {
     box-shadow: 0 50px 100px rgba(0,20,30,0.6), 0 0 0 1px rgba(0,255,255,0.08);
 }
 
-header {
-    text-align: center;
-    margin-bottom: 28px;
-}
+header { text-align: center; margin-bottom: 28px; }
 header h1 {
     font-weight: 700;
     font-size: 28px;
@@ -159,18 +142,15 @@ textarea:focus {
     transform: translateY(-2px) scale(1.02);
     box-shadow: 0 8px 20px rgba(0,0,0,0.5);
 }
-.toolbar button[data-tag="jump"] { border-bottom: 3px solid #ff66ff; background: rgba(40,20,50,0.6); }
-.toolbar button[data-tag="shake"] { border-bottom: 3px solid #ff66ff; background: rgba(40,20,50,0.6); }
-.toolbar button[data-tag="rainbow"] { border-bottom: 3px solid #ff66ff; background: rgba(40,20,50,0.6); }
-.toolbar button[data-tag="wave"] { border-bottom: 3px solid #ff66ff; background: rgba(40,20,50,0.6); }
-.toolbar button[data-tag="bold"] { border-bottom: 3px solid #aabbdd; }
-.toolbar button[data-tag="italic"] { border-bottom: 3px solid #aabbdd; }
-.toolbar button[data-tag="underline"] { border-bottom: 3px solid #aabbdd; }
+.toolbar button[data-tag] { border-bottom: 3px solid #ff66ff; background: rgba(40,20,50,0.6); }
+.toolbar button[data-tag="bold"],
+.toolbar button[data-tag="italic"],
+.toolbar button[data-tag="underline"] { border-bottom: 3px solid #aabbdd; background: rgba(20,30,50,0.5); }
 .toolbar button[data-var="&displayname&"] { border-bottom: 3px solid #ffdd44; }
+.toolbar button[data-var="&playername&"] { border-bottom: 3px solid #ffdd44; }
 .toolbar button[data-var="&countdown&"] { border-bottom: 3px solid #ff4444; background: rgba(50,18,18,0.6); }
 #btnColor, #btnGradient, #btnIcon { border-bottom: 3px solid #66ffaa; background: rgba(20,50,30,0.5); }
 
-/* Panel (rechts) */
 .panel {
     background: rgba(10,10,20,0.5);
     backdrop-filter: blur(6px);
@@ -219,15 +199,14 @@ input[type="color"] {
 hr { border: 0; border-top: 1px solid #282842; margin: 14px 0; }
 
 /* Vorschau */
-.preview-section {
-    margin: 20px 0 24px 0;
-}
+.preview-section { margin: 20px 0 24px 0; }
 .preview-container {
     background: rgba(0,0,0,0.35);
     border-radius: 24px;
     padding: 20px;
     border: 2px solid #2a2a3e;
     transition: border 0.3s;
+    user-select: text;
 }
 .preview-notification {
     width: 100%;
@@ -274,7 +253,7 @@ hr { border: 0; border-top: 1px solid #282842; margin: 14px 0; }
     width: 100%;
 }
 
-/* Tag-Styles in der Vorschau (werden per JS zugewiesen) */
+/* Tag-Styles */
 .rainbow-text {
     background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
     background-size: 300% 100%;
@@ -320,7 +299,7 @@ hr { border: 0; border-top: 1px solid #282842; margin: 14px 0; }
     border: 1px solid #3a4a6a;
     border-radius: 12px;
     padding: 6px 0;
-    min-width: 180px;
+    min-width: 200px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.7);
     z-index: 999;
 }
@@ -339,9 +318,7 @@ hr { border: 0; border-top: 1px solid #282842; margin: 14px 0; }
     color: #eef2ff;
     transition: background 0.15s;
 }
-.context-menu li:hover {
-    background: rgba(60,80,120,0.4);
-}
+.context-menu li:hover { background: rgba(60,80,120,0.4); }
 .context-menu li i { width: 18px; color: #7ab0ff; }
 
 /* Code-Ausgaben */
