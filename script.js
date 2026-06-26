@@ -1,10 +1,9 @@
 // =================================================================
-// Notification Studio – komplette Logik mit Kontextmenü
+// Notification Studio – optimierte Version mit Kontextmenü & Debounce
 // =================================================================
 
 // --- DOM-Referenzen ---
 const rawText = document.getElementById('rawText');
-const previewContainer = document.getElementById('previewContainer');
 const previewNotification = document.getElementById('previewNotification');
 const contextMenu = document.getElementById('contextMenu');
 
@@ -32,8 +31,7 @@ const consoleOutput = document.getElementById('consoleOutput');
 const jsonOutput = document.getElementById('jsonOutput');
 
 // --- State für Kontextmenü ---
-let activeSelection = null;      // { startIndex, endIndex, text, tagType, tagContent }
-let activeTagElement = null;
+let activeSelection = null;      // { startIndex, endIndex, text, tagType, tagContent, element }
 
 // ------------------------------------------------------------
 // PARSER – wandelt rohen Text in HTML um (rekursiv)
@@ -193,11 +191,18 @@ function renderPreview() {
     const tagElements = previewNotification.querySelectorAll(tagSelectors);
     tagElements.forEach(el => {
         // Wir versuchen, den entsprechenden Tag im rohen Text zu finden
+        // Dazu durchsuchen wir den Text von Anfang an
         const raw = rawText.value;
-        const tagMatch = raw.match(/&(\w+):([^&]*)&/);
-        if (tagMatch) {
-            el.dataset.tagType = tagMatch[1];
-            el.dataset.tagContent = tagMatch[2];
+        // Finde den ersten Tag, der den Text des Elements enthält
+        const regex = /&(\w+):([^&]*)&/g;
+        let match;
+        while ((match = regex.exec(raw)) !== null) {
+            if (match[2] === el.textContent) {
+                el.dataset.tagType = match[1];
+                el.dataset.tagContent = match[2];
+                el.dataset.fullTag = match[0];
+                break;
+            }
         }
         el.style.cursor = 'context-menu';
     });
@@ -213,57 +218,58 @@ function hexToRgba(hex, alpha) {
 // ------------------------------------------------------------
 // KONTEXTMENÜ – Rechtsklick in der Vorschau
 // ------------------------------------------------------------
+let debounceTimer = null;
+
 function setupContextMenu() {
-    previewContainer.addEventListener('contextmenu', function(e) {
+    previewNotification.addEventListener('contextmenu', function(e) {
         e.preventDefault();
 
-        // Prüfen, ob eine Textselektion existiert
-        const sel = window.getSelection();
-        const selectedText = sel.toString().trim();
-
-        // Prüfen, ob die Selektion innerhalb eines getaggten Elements liegt
-        let tagElement = null;
-        if (sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            let node = range.startContainer;
-            while (node && node !== previewNotification) {
-                if (node.nodeType === 1 && node.matches && node.matches('.rainbow-text, .shake, .jump, .wave, .gradient-text, [style*="color"], strong, em, u, del')) {
-                    tagElement = node;
-                    break;
-                }
-                node = node.parentNode;
-            }
-        }
-
+        // Prüfen, ob der Klick auf einem getaggten Element liegt
+        let tagElement = e.target.closest('.rainbow-text, .shake, .jump, .wave, .gradient-text, [style*="color"], strong, em, u, del');
         if (tagElement) {
-            // Rechtsklick auf einem bestehenden Tag
+            // Tag-Modus
             const tagType = tagElement.dataset.tagType || 'unknown';
             const tagContent = tagElement.dataset.tagContent || tagElement.textContent;
-            activeTagElement = tagElement;
-            activeSelection = { text: selectedText, tagType, tagContent, element: tagElement };
-            // Menü anzeigen mit allen Optionen
+            const fullTag = tagElement.dataset.fullTag || `&${tagType}:${tagContent}&`;
+            activeSelection = {
+                element: tagElement,
+                tagType: tagType,
+                tagContent: tagContent,
+                fullTag: fullTag,
+                text: tagElement.textContent,
+                isTag: true
+            };
             showContextMenu(e.clientX, e.clientY, 'tag');
-        } else if (selectedText.length > 0) {
-            // Rechtsklick auf markierten Text (ohne Tag)
-            activeSelection = { text: selectedText, tagType: null, tagContent: null, element: null };
-            showContextMenu(e.clientX, e.clientY, 'selection');
-        } else {
-            // Keine Selektion – nichts tun
-            contextMenu.style.display = 'none';
             return;
         }
+
+        // Prüfen, ob Text markiert ist
+        const sel = window.getSelection();
+        const selectedText = sel.toString().trim();
+        if (selectedText.length > 0) {
+            // Normale Selektion
+            activeSelection = {
+                text: selectedText,
+                isTag: false
+            };
+            showContextMenu(e.clientX, e.clientY, 'selection');
+            return;
+        }
+
+        // Nichts – Menü schließen
+        contextMenu.style.display = 'none';
     });
 
     // Menü-Einträge
     document.getElementById('ctxAdd').addEventListener('click', function() {
         if (!activeSelection) return;
-        if (activeSelection.element) {
-            // Tag bearbeiten – wir fragen nach neuem Tag-Typ und Inhalt
-            const newType = prompt('Neuer Tag-Typ (z.B. wave, shake, rainbow, bold, color, gradient, icon):', activeSelection.tagType || 'wave');
+        if (activeSelection.isTag) {
+            // Tag ändern (wie bearbeiten)
+            const newType = prompt('Neuer Tag-Typ (z.B. wave, shake, rainbow, bold):', activeSelection.tagType);
             if (newType) {
-                const newContent = prompt('Neuer Inhalt für den Tag:', activeSelection.tagContent || activeSelection.text);
+                const newContent = prompt('Neuer Inhalt:', activeSelection.tagContent);
                 if (newContent !== null) {
-                    const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+                    const oldTag = activeSelection.fullTag;
                     const newTag = `&${newType}:${newContent}&`;
                     rawText.value = rawText.value.replace(oldTag, newTag);
                     updateAll();
@@ -273,8 +279,8 @@ function setupContextMenu() {
             // Neuen Tag um die Selektion herum einfügen
             const tagType = prompt('Tag-Typ (z.B. wave, shake, rainbow, bold, color, gradient, icon):', 'wave');
             if (tagType) {
-                const tag = `&${tagType}:${activeSelection.text}&`;
-                // Ersetze den selektierten Text im rohen Text
+                let tag = `&${tagType}:${activeSelection.text}&`;
+                // Ersetze den markierten Text im rohen Text
                 const pos = rawText.value.indexOf(activeSelection.text);
                 if (pos !== -1) {
                     rawText.value = rawText.value.substring(0, pos) + tag + rawText.value.substring(pos + activeSelection.text.length);
@@ -286,10 +292,10 @@ function setupContextMenu() {
     });
 
     document.getElementById('ctxEdit').addEventListener('click', function() {
-        if (!activeSelection || !activeSelection.element) return;
-        const newContent = prompt('Neuen Inhalt für den Tag eingeben:', activeSelection.tagContent || activeSelection.text);
+        if (!activeSelection || !activeSelection.isTag) return;
+        const newContent = prompt('Neuen Inhalt für den Tag eingeben:', activeSelection.tagContent);
         if (newContent !== null) {
-            const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+            const oldTag = activeSelection.fullTag;
             const newTag = `&${activeSelection.tagType}:${newContent}&`;
             rawText.value = rawText.value.replace(oldTag, newTag);
             updateAll();
@@ -298,19 +304,18 @@ function setupContextMenu() {
     });
 
     document.getElementById('ctxDelete').addEventListener('click', function() {
-        if (!activeSelection || !activeSelection.element) return;
-        const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+        if (!activeSelection || !activeSelection.isTag) return;
+        const oldTag = activeSelection.fullTag;
         rawText.value = rawText.value.replace(oldTag, '');
         updateAll();
         contextMenu.style.display = 'none';
     });
 
     document.getElementById('ctxWrap').addEventListener('click', function() {
-        if (!activeSelection || !activeSelection.element) return;
-        // Umschließen: neuen Tag um den bestehenden herum
+        if (!activeSelection || !activeSelection.isTag) return;
         const newType = prompt('Tag-Typ für die Umschließung (z.B. wave, shake, rainbow):', 'wave');
         if (newType) {
-            const oldTag = `&${activeSelection.tagType}:${activeSelection.tagContent}&`;
+            const oldTag = activeSelection.fullTag;
             const newTag = `&${newType}:${oldTag}&`;
             rawText.value = rawText.value.replace(oldTag, newTag);
             updateAll();
@@ -327,7 +332,6 @@ function setupContextMenu() {
 }
 
 function showContextMenu(x, y, mode) {
-    // Alle Menüpunkte anzeigen, aber je nach Modus deaktivieren/aktivieren
     const add = document.getElementById('ctxAdd');
     const edit = document.getElementById('ctxEdit');
     const del = document.getElementById('ctxDelete');
@@ -346,12 +350,12 @@ function showContextMenu(x, y, mode) {
     }
 
     contextMenu.style.display = 'block';
-    contextMenu.style.left = x + 'px';
-    contextMenu.style.top = y + 'px';
+    contextMenu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
+    contextMenu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
 }
 
 // ------------------------------------------------------------
-// TOOLBAR – Platzhalter einfügen
+// TOOLBAR – Platzhalter und Tags einfügen
 // ------------------------------------------------------------
 function setupToolbar() {
     document.querySelectorAll('.toolbar button[data-tag]').forEach(btn => {
@@ -414,7 +418,7 @@ function insertAtCursor(textarea, text) {
 }
 
 // ------------------------------------------------------------
-// CODE-GENERIERUNG (Lua, Console, JSON)
+// CODE-GENERIERUNG (Lua, Console, JSON) – kompakt
 // ------------------------------------------------------------
 function generateCode() {
     const raw = rawText.value;
@@ -536,9 +540,24 @@ function generateCode() {
 }
 
 // ------------------------------------------------------------
-// UPDATE ALLES
+// UPDATE ALLES MIT DEBOUNCE (für Performance)
 // ------------------------------------------------------------
+let updateTimeout = null;
 function updateAll() {
+    if (updateTimeout) clearTimeout(updateTimeout);
+    updateTimeout = setTimeout(() => {
+        renderPreview();
+        generateCode();
+        updateTimeout = null;
+    }, 150); // 150ms Verzögerung
+}
+
+// Sofortige Aktualisierung bei bestimmten Aktionen (z.B. Toolbar)
+function updateImmediate() {
+    if (updateTimeout) {
+        clearTimeout(updateTimeout);
+        updateTimeout = null;
+    }
     renderPreview();
     generateCode();
 }
@@ -576,7 +595,7 @@ function setupTarget() {
             playersInput.disabled = true;
             playersInput.style.opacity = '0.5';
         }
-        updateAll();
+        updateImmediate();
     });
     playersInput.addEventListener('input', updateAll);
 }
@@ -593,7 +612,7 @@ function setupSettings() {
     ];
     inputs.forEach(el => {
         el.addEventListener('input', updateAll);
-        el.addEventListener('change', updateAll);
+        el.addEventListener('change', updateImmediate);
     });
     rawText.addEventListener('input', updateAll);
 }
@@ -607,7 +626,9 @@ function init() {
     setupCopy();
     setupTarget();
     setupSettings();
-    updateAll();
+    // Erstes Rendering sofort
+    renderPreview();
+    generateCode();
 }
 
 document.addEventListener('DOMContentLoaded', init);
