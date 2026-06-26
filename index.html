@@ -2,111 +2,110 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Notification Studio · Pro</title>
-    <!-- Font Awesome Icons -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notification Studio – Tag Editor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <!-- Externe CSS (wird in separater Datei empfohlen) -->
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <div class="container">
-        <!-- Kopfzeile -->
-        <header class="header">
-            <h1><i class="fas fa-bolt"></i> Notification Studio · Pro <i class="fas fa-eye" style="font-size:22px; opacity:0.6;"></i></h1>
-            <p class="subhead">Live-Vorschau – jeden Tag sofort sehen – alle Effekte in Echtzeit</p>
+        <header>
+            <h1><i class="fas fa-bolt"></i> Notification Studio</h1>
+            <p class="subhead">Tags in der Vorschau per Rechtsklick bearbeiten</p>
         </header>
 
-        <!-- Hauptgrid: Links Text & Vorschau, rechts Einstellungen -->
-        <div class="grid">
-            <!-- Linke Spalte: Textarea + Vorschau (verwoben) -->
+        <div class="main-grid">
+            <!-- Linke Spalte: Textarea für den rohen Text -->
             <div class="left-panel">
-                <label for="textInput"><i class="fas fa-pen-fancy"></i> Nachricht (Tags möglich – klicke in die Vorschau zum Bearbeiten)</label>
-                <!-- Textarea (unsichtbar) – wird durch die Vorschau ersetzt -->
-                <textarea id="textInput" style="display:none;"></textarea>
-
-                <!-- Live-Vorschau als bearbeitbares Element -->
-                <div id="previewContainer" class="preview-container" contenteditable="false">
-                    <div id="previewNotification" class="preview-notification">
-                        <span class="preview-placeholder">⬅️ Klicke hier, um die Nachricht zu schreiben</span>
-                    </div>
-                </div>
-
-                <!-- Toolbar (Effekt-Buttons) -->
+                <label for="rawText"><i class="fas fa-pen"></i> Text mit Tags (z.B. &amp;wave:&amp;displayname&amp;&amp;!)</label>
+                <textarea id="rawText" rows="6" placeholder="Gib hier deinen Text mit Tags ein...">Willkommen &amp;wave:&amp;displayname&amp;&amp;! Das ist ein &amp;rainbow:&amp;jump:Test&amp;&amp;&amp; mit &amp;icon:10845341253&amp;</textarea>
                 <div class="toolbar">
-                    <button class="btn-anim" data-tag="jump"><i class="fas fa-arrow-up"></i> Jump</button>
-                    <button class="btn-anim" data-tag="shake"><i class="fas fa-bolt"></i> Shake</button>
-                    <button class="btn-anim" data-tag="rainbow"><i class="fas fa-rainbow"></i> Regenb.</button>
-                    <button class="btn-anim" data-tag="wave"><i class="fas fa-water"></i> Welle</button>
-                    <button class="btn-style" data-tag="bold"><i class="fas fa-bold"></i> Fett</button>
-                    <button class="btn-style" data-tag="italic"><i class="fas fa-italic"></i> Kursiv</button>
-                    <button class="btn-style" data-tag="underline"><i class="fas fa-underline"></i> Unterstr.</button>
-                    <button class="btn-icon" id="btnColor"><i class="fas fa-palette"></i> Farbe</button>
-                    <button class="btn-icon" id="btnGradient"><i class="fas fa-fill-drip"></i> Verlauf</button>
-                    <button class="btn-icon" id="btnIcon"><i class="fas fa-image"></i> Icon</button>
-                    <button class="btn-player" data-var="&displayname&"><i class="fas fa-user-tag"></i> Disp.</button>
-                    <button class="btn-cd" data-var="&countdown&"><i class="fas fa-hourglass-half"></i> Countdown</button>
-                </div>
-
-                <!-- Tag-Liste (interaktiv) -->
-                <div class="tag-list" id="tagList">
-                    <span class="tag-list-empty">Keine Tags erkannt – füge welche über die Toolbar oder durch Tippen ein</span>
+                    <button data-tag="jump"><i class="fas fa-arrow-up"></i> Jump</button>
+                    <button data-tag="shake"><i class="fas fa-bolt"></i> Shake</button>
+                    <button data-tag="rainbow"><i class="fas fa-rainbow"></i> Regenb.</button>
+                    <button data-tag="wave"><i class="fas fa-water"></i> Welle</button>
+                    <button data-tag="bold"><i class="fas fa-bold"></i> Fett</button>
+                    <button data-tag="italic"><i class="fas fa-italic"></i> Kursiv</button>
+                    <button data-tag="underline"><i class="fas fa-underline"></i> Unterstr.</button>
+                    <button id="btnColor"><i class="fas fa-palette"></i> Farbe</button>
+                    <button id="btnGradient"><i class="fas fa-fill-drip"></i> Verlauf</button>
+                    <button id="btnIcon"><i class="fas fa-image"></i> Icon</button>
+                    <button data-var="&displayname&"><i class="fas fa-user-tag"></i> Disp.</button>
+                    <button data-var="&countdown&"><i class="fas fa-hourglass-half"></i> Countdown</button>
                 </div>
             </div>
 
             <!-- Rechte Spalte: Einstellungen -->
             <div class="right-panel panel">
                 <div class="row">
-                    <div>
-                        <label><i class="fas fa-globe"></i> Ziel (target)</label>
-                        <select id="targetSelect">
-                            <option value="All">Alle (global)</option>
-                            <option value="Server">Nur dieser Server</option>
-                            <option value="Specific">Bestimmte Spieler</option>
-                        </select>
-                    </div>
-                    <div id="playersFieldWrapper">
-                        <label id="playersLabel" style="opacity:0.5;">Spieler</label>
-                        <input type="text" id="playersInput" placeholder='z.B. "Gamer", 12345' disabled style="opacity:0.5;" />
-                    </div>
+                    <div><label><i class="fas fa-globe"></i> Ziel</label><select id="targetSelect"><option value="All">Alle</option><option value="Server">Server</option><option value="Specific">Spezifisch</option></select></div>
+                    <div id="playersWrap"><label>Spieler</label><input type="text" id="playersInput" placeholder="Name, ID" disabled /></div>
                 </div>
                 <div class="row">
-                    <div><label><i class="fas fa-user-astronaut"></i> Sender</label><input type="text" id="senderInput" value="System-Admin" /></div>
+                    <div><label><i class="fas fa-user"></i> Sender</label><input type="text" id="senderInput" value="System" /></div>
                     <div><label><i class="fas fa-arrows-alt-v"></i> Position</label><select id="posInput"><option value="Top">Oben</option><option value="Bottom" selected>Unten</option></select></div>
                 </div>
                 <div class="row">
-                    <div><label><i class="far fa-clock"></i> Dauer (Sek.)</label><input type="number" id="durationInput" value="8" min="1" /></div>
-                    <div><label><i class="fas fa-image"></i> Image ID</label><input type="text" id="imageIdInput" value="10845341253" placeholder="z.B. 10845341253" /></div>
+                    <div><label><i class="far fa-clock"></i> Dauer (s)</label><input type="number" id="durationInput" value="8" /></div>
+                    <div><label><i class="fas fa-image"></i> Image ID</label><input type="text" id="imageIdInput" value="10845341253" /></div>
                 </div>
                 <div class="row">
-                    <div class="flex"><input type="checkbox" id="anonInput" /><label style="margin:0;cursor:pointer;"><i class="fas fa-user-secret"></i> Anonym</label></div>
-                    <div class="flex"><input type="checkbox" id="countdownInput" /><label style="margin:0;cursor:pointer;color:#ff7777;"><i class="fas fa-clock"></i> Countdown</label></div>
+                    <div class="flex"><input type="checkbox" id="anonInput" /><label>Anonym</label></div>
+                    <div class="flex"><input type="checkbox" id="countdownInput" /><label style="color:#ff7777;">Countdown</label></div>
                 </div>
                 <hr />
                 <div class="row">
-                    <div class="flex"><input type="color" id="bgColorInput" value="#111116" /><label style="margin:0;">Hintergrund</label></div>
-                    <div><label><i class="fas fa-ghost"></i> Transparenz</label><input type="number" id="transparencyInput" value="0.25" min="0" max="1" step="0.05" /></div>
+                    <div class="flex"><input type="color" id="bgColorInput" value="#111116" /><label>Hintergrund</label></div>
+                    <div><label>Transparenz</label><input type="number" id="transparencyInput" value="0.25" step="0.05" min="0" max="1" /></div>
                 </div>
                 <div class="row">
-                    <div class="flex"><input type="checkbox" id="strokeEnabled" checked /><label style="margin:0;cursor:pointer;"><i class="fas fa-border-all"></i> Box-Rahmen</label></div>
-                    <div class="flex"><input type="color" id="strokeColor" value="#00ffcc" /><input type="number" id="strokeThick" value="2" min="1" max="5" style="width:55px;" /></div>
+                    <div class="flex"><input type="checkbox" id="strokeEnabled" checked /><label>Rahmen</label></div>
+                    <div class="flex"><input type="color" id="strokeColor" value="#00ffcc" /><input type="number" id="strokeThick" value="2" min="1" style="width:55px;" /></div>
                 </div>
                 <div class="row">
-                    <div class="flex"><input type="checkbox" id="textStrokeEnabled" checked /><label style="margin:0;cursor:pointer;"><i class="fas fa-font"></i> Text-Outline</label></div>
-                    <div class="flex"><input type="color" id="textStrokeColor" value="#000000" /><input type="number" id="textStrokeThick" value="2" min="1" max="5" style="width:55px;" /></div>
+                    <div class="flex"><input type="checkbox" id="textStrokeEnabled" checked /><label>Text-Outline</label></div>
+                    <div class="flex"><input type="color" id="textStrokeColor" value="#000000" /><input type="number" id="textStrokeThick" value="2" min="1" style="width:55px;" /></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vorschau-Bereich -->
+        <div class="preview-section">
+            <label><i class="fas fa-eye"></i> Vorschau (Rechtsklick auf Tags zum Bearbeiten/Löschen)</label>
+            <div id="previewContainer" class="preview-container">
+                <div id="previewNotification" class="preview-notification">
+                    <span class="placeholder">Gib Text ein – die Vorschau erscheint hier</span>
                 </div>
             </div>
         </div>
 
         <!-- Code-Ausgaben -->
         <div class="outputs">
-            <div class="code-box"><div class="head"><label><i class="fas fa-code"></i> Lua · Server-Skript</label><button class="copy-btn" data-target="luaOutput"><i class="fas fa-copy"></i> Kopieren</button></div><pre id="luaOutput">-- Generiere den Code durch Eingabe.</pre></div>
-            <div class="code-box"><div class="head"><label><i class="fas fa-terminal"></i> Console · F9 Befehl</label><button class="copy-btn" data-target="consoleOutput"><i class="fas fa-copy"></i> Kopieren</button></div><pre id="consoleOutput"></pre></div>
-            <div class="code-box"><div class="head"><label><i class="fas fa-cloud"></i> JSON · Webhook / API</label><button class="copy-btn" data-target="jsonOutput"><i class="fas fa-copy"></i> Kopieren</button></div><pre id="jsonOutput"></pre></div>
+            <div class="code-box">
+                <div class="head"><label><i class="fas fa-code"></i> Lua · Server</label><button class="copy-btn" data-target="luaOutput"><i class="fas fa-copy"></i> Kopieren</button></div>
+                <pre id="luaOutput">-- Dein Lua-Code</pre>
+            </div>
+            <div class="code-box">
+                <div class="head"><label><i class="fas fa-terminal"></i> Console (F9)</label><button class="copy-btn" data-target="consoleOutput"><i class="fas fa-copy"></i> Kopieren</button></div>
+                <pre id="consoleOutput"></pre>
+            </div>
+            <div class="code-box">
+                <div class="head"><label><i class="fas fa-cloud"></i> JSON</label><button class="copy-btn" data-target="jsonOutput"><i class="fas fa-copy"></i> Kopieren</button></div>
+                <pre id="jsonOutput"></pre>
+            </div>
         </div>
     </div>
 
-    <!-- Externes JS -->
+    <!-- Benutzerdefiniertes Kontextmenü -->
+    <div id="contextMenu" class="context-menu" style="display:none;">
+        <ul>
+            <li id="ctxEdit"><i class="fas fa-edit"></i> Bearbeiten</li>
+            <li id="ctxDelete"><i class="fas fa-trash-alt"></i> Löschen</li>
+            <li id="ctxAddBefore"><i class="fas fa-plus"></i> Vorher einfügen</li>
+            <li id="ctxAddAfter"><i class="fas fa-plus"></i> Nachher einfügen</li>
+        </ul>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
